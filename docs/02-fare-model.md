@@ -21,6 +21,8 @@ passengerFare = subtotal - poolDiscount
 |---|---|
 | Mohakhali | 2 |
 | Gulshan 1 | 3 |
+| Gulshan 2 | 4 |
+| Bashundhara | 7 |
 
 ## Worked example (verify by hand)
 
