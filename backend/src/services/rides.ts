@@ -125,8 +125,9 @@ export async function accept(driverId: string, rideId: string) {
           throw new HttpError(409, "Destination is not compatible with the open pool");
         }
       }
-      await repo.addSeats(c, active.id, ride.seats);
-      poolId = active.id;
+      if (!(await repo.addSeats(c, active.id, ride.seats))) {
+        throw new HttpError(409, "Not enough free seats");
+      }      poolId = active.id;
     }
 
     await repo.markMatched(c, ride.id, poolId);
