@@ -98,8 +98,12 @@ export async function createPool(
   return rows[0];
 }
 
-export async function addSeats(c: PoolClient, poolId: string, seats: number): Promise<void> {
-  await c.query("UPDATE pools SET occupied_seats = occupied_seats + $2 WHERE id = $1", [poolId, seats]);
+export async function addSeats(c: PoolClient, poolId: string, seats: number): Promise<boolean> {
+  const { rowCount } = await c.query(
+    "UPDATE pools SET occupied_seats = occupied_seats + $2::int WHERE id = $1 AND status = 'OPEN' AND occupied_seats + $2::int <= capacity",
+    [poolId, seats]
+  );
+  return rowCount === 1;
 }
 
 export async function zoneCorridor(c: PoolClient, zoneId: number): Promise<string | null> {

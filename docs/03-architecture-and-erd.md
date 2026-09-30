@@ -111,31 +111,21 @@ erDiagram
 
 ## Concurrency: Nusrat and Shirin fight for the last seat
 
-Problem: Bullet has 1 seat left. Both read "1 free", both try to take it.
+Seats are claimed only when a driver accepts a ride, inside one transaction.
+The transaction takes row locks in a fixed order: vehicle, then ride, then pool (all FOR UPDATE).
 
-Bad approach: read occupied seats, check in code, then update. Two requests can both pass the check.
+- Two accepts on the same Tesla queue on the vehicle row lock. The second one re-reads
+  occupied_seats after the first commits and gets 409 if the seat is gone.
+- Two drivers accepting the same ride queue on the ride row lock. The second sees a
+  status other than REQUESTED and gets 409.
+- The seat increment also carries a guard (occupied_seats + seats <= capacity), and the
+  pools_seats_within_capacity CHECK is the last safety net.
 
-Our approach: claim seats with one atomic conditional UPDATE inside a transaction.
+Rule for future code: any path that touches these rows (cancel, start, complete) must
+lock in the same order, or it risks a deadlock.
 
-```sql
-UPDATE pools
-SET occupied_seats = occupied_seats + $seats
-WHERE id = $poolId
-  AND status = 'OPEN'
-  AND occupied_seats + $seats <= capacity
-RETURNING id;
-```
-
-- Postgres row-locks the pool row for the duration of the UPDATE. The second request waits, then re-evaluates the WHERE against the new value and matches zero rows.
-- Zero rows returned means no seat, so the API returns 409 and the ride stays REQUESTED (or Shirin is told the pool is full).
-- If rows returned, the ride is set to MATCHED and a ride_event is written in the same transaction.
-- The CHECK constraint is the safety net if any code path ever forgets the condition.
-- Cancelling a ride decrements occupied_seats in the same transaction.
-
-Test: fire two concurrent join requests (Nusrat and Shirin) at a pool with 1 free seat, assert exactly one succeeds and occupied_seats equals capacity.
-
-At larger scale: per-vehicle serialization through a queue or a reservation with TTL in a fast store, plus idempotency keys on requests. Not needed for the MVP.
-
+At larger scale: per-vehicle serialization through a queue or a reservation with TTL,
+plus idempotency keys on requests.
 ## Auth and security basics
 
 bcrypt password hashes, JWT with expiry, role checks in middleware, ownership checks in services (a passenger can only read or cancel own rides), zod validation on every input, rate limit on auth routes, no secrets in git.
