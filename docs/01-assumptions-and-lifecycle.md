@@ -37,7 +37,7 @@ A new request R can join an open pool P when all of these are true:
 
 1. R.pickupZone equals the pool's pickup zone.
 2. R.destinationZone is in the same corridor as the pool's first passenger destination.
-3. P.status is OPEN or ACCEPTED (not yet STARTED).
+3. P.status is OPEN (trip not yet started).
 4. P.occupiedSeats + R.seats is at most the Tesla capacity.
 
 Example: Nusrat (Banani to Mohakhali) and Rafiq (Banani to Gulshan 1) share the pickup zone and both destinations are in EAST, so they can share Bullet.
