@@ -29,11 +29,19 @@ $nusrat = Login "nusrat@example.com"
 $rafiq  = Login "rafiq@example.com"
 $shirin = Login "shirin@example.com"
 
-$zones = Api "GET" "/zones" $nusrat $null
-if ($zones.zones) { $zones = $zones.zones }
-$banani    = ($zones | Where-Object { $_.name -eq "Banani" }).id
-$mohakhali = ($zones | Where-Object { $_.name -eq "Mohakhali" }).id
-$gulshan1  = ($zones | Where-Object { $_.name -eq "Gulshan 1" }).id
+$zones = @(Api "GET" "/zones" $nusrat $null)
+if ($zones.Count -eq 1 -and $zones[0] -is [array]) { $zones = $zones[0] }
+
+function ZoneId($name) {
+  $z = $zones | Where-Object { $_.name -eq $name } | Select-Object -First 1
+  if (-not $z) { throw "Zone '$name' not found. Got: $($zones | ConvertTo-Json -Compress)" }
+  return [int]$z.id
+}
+
+$banani    = ZoneId "Banani"
+$mohakhali = ZoneId "Mohakhali"
+$gulshan1  = ZoneId "Gulshan 1"
+Write-Host "Zone ids: Banani=$banani Mohakhali=$mohakhali Gulshan1=$gulshan1"
 
 Step "Jashim takes Bullet online"
 Api "PATCH" "/vehicles/me/status" $jashim @{ online = $true } | Format-List
