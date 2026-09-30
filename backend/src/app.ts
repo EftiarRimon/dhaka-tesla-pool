@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { pool } from "./db";
 import { HttpError } from "./errors";
 import { authRouter } from "./routes/auth";
+import { vehiclesRouter } from "./routes/vehicles";
 
 export const app = express();
 app.use(express.json());
@@ -21,6 +22,7 @@ app.get("/health/db", async (_req, res) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/vehicles", vehiclesRouter);
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof ZodError) {

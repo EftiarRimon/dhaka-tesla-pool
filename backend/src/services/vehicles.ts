@@ -1,0 +1,41 @@
+import { HttpError } from "../errors";
+import * as vehicles from "../repositories/vehicles";
+
+function publicVehicle(v: vehicles.VehicleRow) {
+  return { id: v.id, name: v.name, capacity: v.capacity, isOnline: v.is_online };
+}
+
+export async function register(driverId: string, name: string, capacity: number) {
+  if (await vehicles.findByDriver(driverId)) {
+    throw new HttpError(409, "Driver already has a vehicle");
+  }
+  try {
+    return publicVehicle(await vehicles.insertVehicle(driverId, name, capacity));
+  } catch (err) {
+    // two requests racing: the UNIQUE(driver_id) constraint decides
+    if ((err as { code?: string }).code === "23505") {
+      throw new HttpError(409, "Driver already has a vehicle");
+    }
+    throw err;
+  }
+}
+
+export async function getMine(driverId: string) {
+  const v = await vehicles.findByDriver(driverId);
+  if (!v) {
+    throw new HttpError(404, "No vehicle registered");
+  }
+  return publicVehicle(v);
+}
+
+export async function setStatus(driverId: string, online: boolean) {
+  const v = await vehicles.findByDriver(driverId);
+  if (!v) {
+    throw new HttpError(404, "No vehicle registered");
+  }
+  if (!online && (await vehicles.hasRidersOnBoard(v.id))) {
+    throw new HttpError(409, "Cannot go offline with riders on board");
+  }
+  const updated = await vehicles.setOnline(driverId, online);
+  return publicVehicle(updated!);
+}
