@@ -66,3 +66,29 @@ try {
 } catch {
   Write-Host "HTTP $($_.Exception.Response.StatusCode.value__): $($_.ErrorDetails.Message)" -ForegroundColor Green
 }
+function Expect-Fail($label, $block) {
+  try {
+    & $block | Out-Null
+    Write-Host "UNEXPECTED success: $label" -ForegroundColor Red
+  } catch {
+    Write-Host "$label -> HTTP $($_.Exception.Response.StatusCode.value__) $($_.ErrorDetails.Message)" -ForegroundColor Green
+  }
+}
+
+Step "Lifecycle: invalid moves are rejected"
+Expect-Fail "Jashim starts Nusrat before she is marked arrived" { Api "POST" "/rides/$($nRide.id)/start" $jashim $null }
+Expect-Fail "Nusrat tries to cancel Rafiq's ride" { Api "POST" "/rides/$($rRide.id)/cancel" $nusrat $null }
+Expect-Fail "Nusrat tries the driver-only arrive action" { Api "POST" "/rides/$($nRide.id)/arrive" $nusrat $null }
+
+Step "Shirin cancels her own request"
+Api "POST" "/rides/$($sRide.id)/cancel" $shirin $null | Select-Object status | Format-Table
+
+Step "Jashim drives Nusrat and Rafiq to the end"
+foreach ($id in @($nRide.id, $rRide.id)) { Api "POST" "/rides/$id/arrive" $jashim $null | Out-Null }
+foreach ($id in @($nRide.id, $rRide.id)) { Api "POST" "/rides/$id/start" $jashim $null | Out-Null }
+Expect-Fail "Rafiq cancels after the trip started" { Api "POST" "/rides/$($rRide.id)/cancel" $rafiq $null }
+foreach ($id in @($nRide.id, $rRide.id)) { Api "POST" "/rides/$id/complete" $jashim $null | Out-Null }
+
+Step "Final fares (history)"
+Api "GET" "/rides/me" $nusrat $null | Select-Object @{n="who";e={"Nusrat"}}, status, finalFarePaisa | Format-Table -AutoSize
+Api "GET" "/rides/me" $rafiq $null | Select-Object @{n="who";e={"Rafiq"}}, status, finalFarePaisa | Format-Table -AutoSize
