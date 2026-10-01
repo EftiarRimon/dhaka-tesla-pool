@@ -61,3 +61,14 @@ Anything else is rejected with HTTP 409.
 OPEN (accepting passengers), IN_PROGRESS (trip started), COMPLETED, CANCELLED.
 
 Why the improvement: the brief suggests one lifecycle. We keep a status on each passenger ride AND on the pool, because one passenger can cancel while the others continue. Each passenger sees only their own ride status.
+
+
+## Rules added during implementation
+
+1. The first `start` moves the pool from OPEN to IN_PROGRESS. After that no new passenger can join.
+2. The pool discount applies while two or more passengers are active. If a passenger cancels and only one is left while the pool is OPEN, the discount is removed. Once IN_PROGRESS, fares are frozen, so a late cancellation cannot change a fare mid-trip.
+3. `complete` snapshots `final_fare_paisa = estimated_fare_paisa - discount_paisa`.
+4. A pool becomes COMPLETED when its last active ride completes (or cancels while IN_PROGRESS), and CANCELLED when its last active ride cancels while OPEN.
+5. Cancelling releases the ride's seats in the same transaction. Completing does not, so a finished pool still shows how many seats were used.
+6. Lock order everywhere: vehicle, then ride, then pool. Cancel reads the ride's vehicle without a lock first, then re-checks the pool after locking the ride, and returns 409 if it changed.
+7. Cancel is allowed from REQUESTED, MATCHED and DRIVER_ARRIVED. A passenger can cancel only their own ride, a driver only rides in their own pool. After STARTED, cancel returns 409.
