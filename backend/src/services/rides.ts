@@ -139,3 +139,48 @@ export async function accept(driverId: string, rideId: string) {
     return publicRide(fresh!);
   });
 }
+export type DriverAction = "arrive" | "start" | "complete";
+
+const STEPS: Record<DriverAction, { from: string; to: string }> = {
+  arrive: { from: "MATCHED", to: "DRIVER_ARRIVED" },
+  start: { from: "DRIVER_ARRIVED", to: "STARTED" },
+  complete: { from: "STARTED", to: "COMPLETED" },
+};
+
+export async function advance(driverId: string, rideId: string, action: DriverAction) {
+  const step = STEPS[action];
+  return withTx(async (c) => {
+    // Lock order: vehicle, ride, pool (same as accept).
+    const vehicle = await repo.lockVehicleByDriver(c, driverId);
+    if (!vehicle) {
+      throw new HttpError(404, "No vehicle registered");
+    }
+    const ride = await repo.lockRide(c, rideId);
+    if (!ride) {
+      throw new HttpError(404, "Ride not found");
+    }
+    const pool = await repo.lockActivePool(c, vehicle.id);
+    if (!pool || ride.pool_id !== pool.id) {
+      throw new HttpError(403, "This ride is not in your pool");
+    }
+    if (ride.status !== step.from) {
+      throw new HttpError(409, `Cannot ${action} a ride that is ${ride.status}`);
+    }
+
+    if (action === "complete") {
+      await repo.completeRide(c, ride.id);
+    } else {
+      await repo.setRideStatus(c, ride.id, step.to);
+    }
+    if (action === "start" && pool.status === "OPEN") {
+      // First start closes the pool to new passengers.
+      await repo.setPoolStatus(c, pool.id, "IN_PROGRESS");
+    }
+    await repo.insertEvent(c, ride.id, step.from, step.to, driverId);
+    if (action === "complete" && (await repo.countActivePassengers(c, pool.id)) === 0) {
+      await repo.setPoolStatus(c, pool.id, "COMPLETED");
+    }
+    const fresh = await repo.getRide(c, ride.id);
+    return publicRide(fresh!);
+  });
+}

@@ -60,3 +60,14 @@ ridesRouter.post("/:id/accept", driver, async (req: Request, res: Response, next
     next(err);
   }
 });
+
+for (const action of ["arrive", "start", "complete"] as const) {
+  ridesRouter.post(`/:id/${action}`, driver, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = z.string().uuid().parse(req.params.id);
+      res.json(await rides.advance(req.auth!.userId, id, action));
+    } catch (err) {
+      next(err);
+    }
+  });
+}

@@ -154,3 +154,19 @@ export async function listRequested(): Promise<RideRow[]> {
   );
   return rows;
 }
+
+export async function setRideStatus(c: PoolClient, rideId: string, status: string): Promise<void> {
+  await c.query("UPDATE rides SET status = $2, updated_at = now() WHERE id = $1", [rideId, status]);
+}
+
+export async function setPoolStatus(c: PoolClient, poolId: string, status: string): Promise<void> {
+  await c.query("UPDATE pools SET status = $2 WHERE id = $1", [poolId, status]);
+}
+
+// Snapshot the fare at completion so history stays explainable if constants change later.
+export async function completeRide(c: PoolClient, rideId: string): Promise<void> {
+  await c.query(
+    "UPDATE rides SET status = 'COMPLETED', final_fare_paisa = estimated_fare_paisa - discount_paisa, updated_at = now() WHERE id = $1",
+    [rideId]
+  );
+}
