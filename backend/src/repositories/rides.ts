@@ -154,3 +154,54 @@ export async function listRequested(): Promise<RideRow[]> {
   );
   return rows;
 }
+
+export async function setRideStatus(c: PoolClient, rideId: string, status: string): Promise<void> {
+  await c.query("UPDATE rides SET status = $2, updated_at = now() WHERE id = $1", [rideId, status]);
+}
+
+export async function setPoolStatus(c: PoolClient, poolId: string, status: string): Promise<void> {
+  await c.query("UPDATE pools SET status = $2 WHERE id = $1", [poolId, status]);
+}
+
+// Snapshot the fare at completion so history stays explainable if constants change later.
+export async function completeRide(c: PoolClient, rideId: string): Promise<void> {
+  await c.query(
+    "UPDATE rides SET status = 'COMPLETED', final_fare_paisa = estimated_fare_paisa - discount_paisa, updated_at = now() WHERE id = $1",
+    [rideId]
+  );
+}
+export interface RideLink {
+  pool_id: string | null;
+  vehicle_id: string | null;
+  passenger_id: string;
+  driver_id: string | null;
+}
+
+// Plain read (no lock) to learn which vehicle to lock first.
+export async function findRideLink(c: PoolClient, rideId: string): Promise<RideLink | null> {
+  const { rows } = await c.query<RideLink>(
+    "SELECT r.pool_id, p.vehicle_id, r.passenger_id, v.driver_id FROM rides r LEFT JOIN pools p ON p.id = r.pool_id LEFT JOIN vehicles v ON v.id = p.vehicle_id WHERE r.id = $1",
+    [rideId]
+  );
+  return rows[0] ?? null;
+}
+
+export async function lockVehicleById(c: PoolClient, vehicleId: string): Promise<void> {
+  await c.query("SELECT id FROM vehicles WHERE id = $1 FOR UPDATE", [vehicleId]);
+}
+
+export async function lockPoolById(c: PoolClient, poolId: string): Promise<PoolRow | null> {
+  const { rows } = await c.query<PoolRow>("SELECT * FROM pools WHERE id = $1 FOR UPDATE", [poolId]);
+  return rows[0] ?? null;
+}
+
+export async function releaseSeats(c: PoolClient, poolId: string, seats: number): Promise<void> {
+  await c.query("UPDATE pools SET occupied_seats = occupied_seats - $2::int WHERE id = $1", [poolId, seats]);
+}
+
+export async function clearPoolDiscount(c: PoolClient, poolId: string): Promise<void> {
+  await c.query(
+    "UPDATE rides SET discount_paisa = 0, updated_at = now() WHERE pool_id = $1 AND status IN ('MATCHED', 'DRIVER_ARRIVED', 'STARTED')",
+    [poolId]
+  );
+}
