@@ -9,10 +9,12 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login");
+    if (loading) return;
+    if (!user) router.replace("/login");
+    else if (user.role === "PASSENGER") router.replace("/passenger");
   }, [loading, user, router]);
 
-  if (loading || !user) {
+  if (loading || !user || user.role === "PASSENGER") {
     return (
       <main>
         <p className="muted">Loading...</p>
@@ -25,7 +27,7 @@ export default function Home() {
       <h1>Dhaka Tesla Pool</h1>
       <div className="card">
         <p>
-          Signed in as <strong>{user.name}</strong> ({user.role})
+          Signed in as <strong>{user.name}</strong> ({user.role}). The driver screen is next.
         </p>
         <button className="secondary" onClick={logout}>
           Sign out
