@@ -50,3 +50,13 @@ h2 { margin: 0 0 12px; font-size: 18px; }
 }
 .fare { font-size: 22px; font-weight: 600; }
 .history-row { margin: 8px 0; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.badge.off { background: #f2f4f7; color: var(--muted); }
+button.small { padding: 6px 12px; font-size: 14px; }
+.seats { display: flex; gap: 6px; margin: 8px 0; }
+.seat { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--brand); }
+.seat.filled { background: var(--brand); }
+.passenger {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  border-top: 1px solid var(--border); padding: 12px 0;
+}
