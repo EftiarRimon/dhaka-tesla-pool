@@ -20,8 +20,7 @@ function Step($title) { Write-Host "`n== $title" -ForegroundColor Cyan }
 
 function Show-Fares($who, $token) {
   $mine = Api "GET" "/rides/me" $token $null
-  $mine | Select-Object @{n="passenger";e={$who}}, status, seats, estimatedFarePaisa, discountPaisa, passengerFarePaisa | Format-Table -AutoSize
-}
+  $mine | Select-Object @{n="who";e={$who}}, status, @{n="solo";e={$_.estimatedFarePaisa}}, @{n="disc";e={$_.discountPaisa}}, @{n="fare";e={$_.passengerFarePaisa}} | Format-Table -AutoSize}
 
 Step "Login"
 $jashim = Login "jashim@example.com"
@@ -90,5 +89,7 @@ Expect-Fail "Rafiq cancels after the trip started" { Api "POST" "/rides/$($rRide
 foreach ($id in @($nRide.id, $rRide.id)) { Api "POST" "/rides/$id/complete" $jashim $null | Out-Null }
 
 Step "Final fares (history)"
-Api "GET" "/rides/me" $nusrat $null | Select-Object @{n="who";e={"Nusrat"}}, status, finalFarePaisa | Format-Table -AutoSize
-Api "GET" "/rides/me" $rafiq $null | Select-Object @{n="who";e={"Rafiq"}}, status, finalFarePaisa | Format-Table -AutoSize
+$n = Api "GET" "/rides/me" $nusrat $null
+$n | Select-Object @{n="who";e={"Nusrat"}}, status, finalFarePaisa | Format-Table -AutoSize
+$r = Api "GET" "/rides/me" $rafiq $null
+$r | Select-Object @{n="who";e={"Rafiq"}}, status, finalFarePaisa | Format-Table -AutoSize
