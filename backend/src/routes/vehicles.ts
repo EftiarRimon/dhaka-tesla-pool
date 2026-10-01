@@ -38,3 +38,11 @@ vehiclesRouter.patch("/me/status", async (req: Request, res: Response, next: Nex
     next(err);
   }
 });
+
+vehiclesRouter.get("/me/pool", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await vehicles.getCurrentPool(req.auth!.userId));
+  } catch (err) {
+    next(err);
+  }
+});

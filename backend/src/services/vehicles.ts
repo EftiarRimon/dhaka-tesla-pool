@@ -39,3 +39,39 @@ export async function setStatus(driverId: string, online: boolean) {
   const updated = await vehicles.setOnline(driverId, online);
   return publicVehicle(updated!);
 }
+
+
+function publicPassenger(r: vehicles.PoolPassengerRow) {
+  return {
+    rideId: r.ride_id,
+    name: r.passenger_name,
+    seats: r.seats,
+    status: r.status,
+    destinationZone: r.destination_zone,
+    passengerFarePaisa: r.estimated_fare_paisa - r.discount_paisa,
+    finalFarePaisa: r.final_fare_paisa,
+  };
+}
+
+export async function getCurrentPool(driverId: string) {
+  const v = await vehicles.findByDriver(driverId);
+  if (!v) {
+    throw new HttpError(404, "No vehicle registered");
+  }
+  const p = await vehicles.findActivePool(v.id);
+  if (!p) {
+    return { pool: null };
+  }
+  const passengers = await vehicles.listPoolPassengers(p.id);
+  return {
+    pool: {
+      id: p.id,
+      status: p.status,
+      pickupZone: p.pickup_zone,
+      capacity: p.capacity,
+      occupiedSeats: p.occupied_seats,
+      freeSeats: p.capacity - p.occupied_seats,
+      passengers: passengers.map(publicPassenger),
+    },
+  };
+}
