@@ -46,3 +46,12 @@ vehiclesRouter.get("/me/pool", async (req: Request, res: Response, next: NextFun
     next(err);
   }
 });
+
+
+vehiclesRouter.get("/me/history", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(await vehicles.getHistory(req.auth!.userId));
+  } catch (err) {
+    next(err);
+  }
+});

@@ -75,3 +75,17 @@ export async function getCurrentPool(driverId: string) {
     },
   };
 }
+
+export async function getHistory(driverId: string) {
+  const v = await vehicles.findByDriver(driverId);
+  if (!v) {
+    throw new HttpError(404, "No vehicle registered");
+  }
+  const rows = await vehicles.listHistory(v.id);
+  return rows.map((r) => ({
+    ...publicPassenger(r),
+    poolId: r.pool_id,
+    pickupZone: r.pickup_zone,
+    finishedAt: r.updated_at,
+  }));
+}

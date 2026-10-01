@@ -74,3 +74,17 @@ export async function listPoolPassengers(poolId: string): Promise<PoolPassengerR
   );
   return rows;
 }
+
+export interface HistoryRow extends PoolPassengerRow {
+  pool_id: string;
+  pickup_zone: string;
+  updated_at: Date;
+}
+
+export async function listHistory(vehicleId: string): Promise<HistoryRow[]> {
+  const { rows } = await pool.query<HistoryRow>(
+    "SELECT r.id AS ride_id, r.pool_id, u.name AS passenger_name, r.seats, r.status, pz.name AS pickup_zone, dz.name AS destination_zone, r.estimated_fare_paisa, r.discount_paisa, r.final_fare_paisa, r.updated_at FROM rides r JOIN pools p ON p.id = r.pool_id JOIN users u ON u.id = r.passenger_id JOIN zones pz ON pz.id = r.pickup_zone_id JOIN zones dz ON dz.id = r.destination_zone_id WHERE p.vehicle_id = $1 AND p.status IN ('COMPLETED', 'CANCELLED') ORDER BY r.updated_at DESC LIMIT 30",
+    [vehicleId]
+  );
+  return rows;
+}
