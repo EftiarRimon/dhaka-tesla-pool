@@ -71,3 +71,13 @@ for (const action of ["arrive", "start", "complete"] as const) {
     }
   });
 }
+
+ridesRouter.post("/:id/cancel", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    const { userId, role } = req.auth!;
+    res.json(await rides.cancel({ userId, role: role as "PASSENGER" | "DRIVER" }, id));
+  } catch (err) {
+    next(err);
+  }
+});

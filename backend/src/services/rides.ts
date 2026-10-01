@@ -184,3 +184,51 @@ export async function advance(driverId: string, rideId: string, action: DriverAc
     return publicRide(fresh!);
   });
 }
+
+const CANCELLABLE = ["REQUESTED", "MATCHED", "DRIVER_ARRIVED"];
+
+export async function cancel(actor: { userId: string; role: "PASSENGER" | "DRIVER" }, rideId: string) {
+  return withTx(async (c) => {
+    const link = await repo.findRideLink(c, rideId);
+    if (!link) {
+      throw new HttpError(404, "Ride not found");
+    }
+    // Ownership is decided on fields that never change, before taking any lock.
+    const owns = actor.role === "PASSENGER" ? link.passenger_id === actor.userId : link.driver_id === actor.userId;
+    if (!owns) {
+      throw new HttpError(403, "Not your ride");
+    }
+
+    // Lock order: vehicle, ride, pool (same as accept and advance).
+    if (link.vehicle_id) {
+      await repo.lockVehicleById(c, link.vehicle_id);
+    }
+    const ride = await repo.lockRide(c, rideId);
+    if (!ride) {
+      throw new HttpError(404, "Ride not found");
+    }
+    if (ride.pool_id !== link.pool_id) {
+      throw new HttpError(409, "Ride changed while cancelling, please retry");
+    }
+    if (!CANCELLABLE.includes(ride.status)) {
+      throw new HttpError(409, `Cannot cancel a ride that is ${ride.status}`);
+    }
+
+    await repo.setRideStatus(c, ride.id, "CANCELLED");
+    await repo.insertEvent(c, ride.id, ride.status, "CANCELLED", actor.userId);
+
+    if (ride.pool_id) {
+      const pool = await repo.lockPoolById(c, ride.pool_id);
+      await repo.releaseSeats(c, ride.pool_id, ride.seats);
+      const left = await repo.countActivePassengers(c, ride.pool_id);
+      if (left === 0 && pool) {
+        await repo.setPoolStatus(c, pool.id, pool.status === "IN_PROGRESS" ? "COMPLETED" : "CANCELLED");
+      } else if (left === 1 && pool?.status === "OPEN") {
+        // A lone passenger no longer gets the pool discount. Once the trip is in progress, fares stay frozen.
+        await repo.clearPoolDiscount(c, ride.pool_id);
+      }
+    }
+    const fresh = await repo.getRide(c, ride.id);
+    return publicRide(fresh!);
+  });
+}
