@@ -111,6 +111,16 @@ erDiagram
 
 ## Concurrency: Nusrat and Shirin fight for the last seat
 
+## Why raw SQL instead of an ORM
+
+The rules that keep seats and rides consistent live in Postgres, so the API talks to Postgres directly through `pg`.
+
+- The partial unique indexes (one active ride per passenger, one active pool per vehicle) and the `pools_seats_within_capacity` CHECK are written in the SQL migration. ORMs such as Prisma usually cannot express partial indexes in their schema language and need raw SQL for them anyway.
+- The hot path uses `SELECT ... FOR UPDATE` in a fixed order (vehicle, ride, pool) and a guarded `UPDATE` (`occupied_seats + n <= capacity`). Plain SQL keeps that lock order visible and reviewable in `backend/src/repositories`.
+- The schema is small, so hand-written repository functions stay short and every query can be read in one place.
+
+Trade-offs: row types are written by hand instead of generated, and migrations are plain `.sql` files that Postgres applies only on a fresh volume (`docker compose down -v` resets them). A migration tool is a next step if the schema starts changing often.
+
 Seats are claimed only when a driver accepts a ride, inside one transaction.
 The transaction takes row locks in a fixed order: vehicle, then ride, then pool (all FOR UPDATE).
 
