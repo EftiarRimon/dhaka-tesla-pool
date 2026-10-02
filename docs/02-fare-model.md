@@ -24,6 +24,8 @@ passengerFare = subtotal - poolDiscount
 | Gulshan 2 | 4 |
 | Bashundhara | 7 |
 
+The other zone pairs are in `db/seed/002_zone_distances.sql`. They are rounded, invented numbers (the MVP does no real routing) and are stored in both directions, so a trip costs the same either way.
+
 ## Worked example (verify by hand)
 
 Nusrat, Banani to Mohakhali, 1 seat:
