@@ -15,6 +15,7 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
+  registerPassenger: (name: string, email: string, password: string) => Promise<User>;
   logout: () => void;
 }
 
@@ -51,12 +52,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return res.user;
   }, []);
 
+  // Sign-up is passenger-only. Drivers need a vehicle, which only the seed creates in this MVP.
+  const registerPassenger = useCallback(async (name: string, email: string, password: string) => {
+    const res = await api<{ token: string; user: User }>("/auth/register", {
+      method: "POST",
+      body: { name, email, password, role: "PASSENGER" },
+    });
+    tokenStore.set(res.token);
+    setUser(res.user);
+    return res.user;
+  }, []);
+
   const logout = useCallback(() => {
     tokenStore.clear();
     setUser(null);
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, registerPassenger, logout }}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth(): AuthState {
