@@ -11,6 +11,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Postgres runs these in filename order on first init
+      - ./db/init/000_create_test_db.sql:/docker-entrypoint-initdb.d/000_create_test_db.sql:ro
       - ./db/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
       - ./db/seed/001_seed.sql:/docker-entrypoint-initdb.d/002_seed.sql:ro
     healthcheck:
