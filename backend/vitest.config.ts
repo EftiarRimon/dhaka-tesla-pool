@@ -13,6 +13,7 @@ export default defineConfig({
     env: {
       DATABASE_URL: TEST_DATABASE_URL,
       JWT_SECRET: "test-secret-not-for-production",
+       AUTH_RATE_LIMIT_MAX: "1000",
     },
   },
 });

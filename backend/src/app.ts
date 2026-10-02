@@ -9,11 +9,18 @@ import { zonesRouter } from "./routes/zones";
 import { log } from "./logger";
 import { requestLog } from "./middleware/requestLog";
 import helmet from "helmet";
+import { config } from "./config";
+import { createAuthLimiter } from "./middleware/rateLimit";
 
 export const app = express();
+app.set("trust proxy", 1);
 app.use(helmet());
 app.use(requestLog);
 app.use(express.json({ limit: "10kb" }));
+const authLimiter = createAuthLimiter(config.AUTH_RATE_LIMIT_MAX);
+app.use("/auth/login", authLimiter);
+app.use("/auth/register", authLimiter);
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
