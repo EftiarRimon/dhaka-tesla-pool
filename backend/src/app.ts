@@ -6,8 +6,11 @@ import { authRouter } from "./routes/auth";
 import { ridesRouter } from "./routes/rides";
 import { vehiclesRouter } from "./routes/vehicles";
 import { zonesRouter } from "./routes/zones";
+import { log } from "./logger";
+import { requestLog } from "./middleware/requestLog";
 
 export const app = express();
+app.use(requestLog);
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
@@ -38,6 +41,6 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   if ((err as { type?: string }).type === "entity.parse.failed") {
     return res.status(400).json({ error: "Invalid JSON body" });
   }
-  console.error(err);
+  log("error", "unhandled error", { stack: (err as Error).stack });
   res.status(500).json({ error: "Internal server error" });
 });
