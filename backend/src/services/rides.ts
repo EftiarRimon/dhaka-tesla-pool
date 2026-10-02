@@ -127,7 +127,9 @@ export async function accept(driverId: string, rideId: string) {
       }
       if (!(await repo.addSeats(c, active.id, ride.seats))) {
         throw new HttpError(409, "Not enough free seats");
-      }      poolId = active.id;
+      }  
+       poolId = active.id;
+            
     }
 
     await repo.markMatched(c, ride.id, poolId);
