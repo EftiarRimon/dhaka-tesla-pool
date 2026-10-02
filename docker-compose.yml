@@ -14,6 +14,7 @@ services:
       - ./db/init/000_create_test_db.sql:/docker-entrypoint-initdb.d/000_create_test_db.sql:ro
       - ./db/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
       - ./db/seed/001_seed.sql:/docker-entrypoint-initdb.d/002_seed.sql:ro
+      - ./db/seed/002_zone_distances.sql:/docker-entrypoint-initdb.d/003_zone_distances.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tesla} -d ${POSTGRES_DB:-teslapool}"]
       interval: 5s
