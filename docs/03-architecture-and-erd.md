@@ -143,3 +143,12 @@ bcrypt password hashes, JWT with expiry, role checks in middleware, ownership ch
 ## Error handling
 
 Consistent JSON error shape: status code, machine code, message. 400 validation, 401 unauthenticated, 403 forbidden or not owner, 404 not found, 409 invalid transition or no seats.
+
+## Security and logging
+
+- Passwords are hashed with bcrypt. Tokens are signed JWTs, and every ride action checks the token's user and role in the service layer.
+- `helmet` sets security headers. JSON bodies are capped at 10 KB.
+- Login and register are rate limited per IP (default 30 per 15 minutes, `AUTH_RATE_LIMIT_MAX`). Counters live in API memory, which is fine for one instance. With several API instances they would move to a shared store such as Redis.
+- Behind the Next.js proxy the API trusts one proxy hop (`trust proxy = 1`) so it sees the real client IP.
+- Logs are one JSON line per request (method, path, status, ms, user id). Passwords and tokens are never logged.
+- The API warns at startup if `JWT_SECRET` is still `change-me`. It does not refuse to boot, so `docker compose up` works without a `.env`. Set a real secret anywhere public.
