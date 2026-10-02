@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
@@ -52,6 +53,10 @@ export default function LoginPage() {
           {busy ? "Signing in..." : "Sign in"}
         </button>
       </form>
+
+      <p className="muted">
+        New passenger? <Link href="/signup">Create an account</Link>
+      </p>
 
       <div className="card">
         <p className="muted">Demo accounts (password: password123)</p>
