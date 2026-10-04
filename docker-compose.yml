@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tesla}
       POSTGRES_DB: ${POSTGRES_DB:-teslapool}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Postgres runs these in filename order on first init
@@ -29,7 +29,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me}
       PORT: 4000
     ports:
-      - "4000:4000"
+      - "${API_PORT:-4000}:4000"
     depends_on:
       db:
         condition: service_healthy
@@ -40,7 +40,7 @@ services:
       args:
         API_URL: http://api:4000
     ports:
-      - "3000:3000"
+      - "${WEB_PORT:-3000}:3000"
     depends_on:
       - api
 
