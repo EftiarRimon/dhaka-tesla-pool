@@ -48,7 +48,24 @@ Nusrat and Rafiq leave from the same place, going to nearby destinations. The sy
 
 ## Screenshots
 
-TODO: add screenshots or GIFs: passenger request, driver dashboard with Nusrat and Rafiq in Bullet, Shirin's "no seats" error.
+### Login and sign-up
+
+![Login with demo accounts](docs/screenshots/01-login.png)
+![Passenger sign-up](docs/screenshots/02-signup.png)
+
+### Passenger: request a ride
+
+![Nusrat picks Banani to Mohakhali and sees the estimate](docs/screenshots/03-passenger-request.png)
+![Nusrat's ride after it is requested](docs/screenshots/03-passenger-request-complete.png)
+
+### Driver: Bullet's pool
+
+![Jashim sees the incoming request](docs/screenshots/04-driver-pool.png)
+![Jashim accepts and Bullet's pool fills up](docs/screenshots/05-driver-pool-accept.png)
+
+### Edge case: no seats left
+
+![Shirin is refused when Bullet is full](docs/screenshots/06-no-seats.png)
 
 ## Architecture
 
