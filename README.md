@@ -3,8 +3,8 @@
 Share a seat. Split the fare. Survive Dhaka traffic.
 
 > **Demo video (6 min):** TODO: paste Loom link here
-> **Live deployment:** TODO: paste URL, or see [Deployment](#deployment)
-> **Release:** `release/v1.0.0` (tag `v1.0.0`)
+> **Live deployment:** not deployed publicly, see [Deployment](#deployment) for the Docker Compose setup
+> **Release:** branch `release/v1.0.0`
 
 ## Summary
 
@@ -34,7 +34,7 @@ Nusrat and Rafiq leave from the same place, going to nearby destinations. The sy
 - View ride history (own rides only)
 
 **Driver**
-- Sign in, register a Tesla with fixed capacity, go online or offline
+- Sign in and go online or offline (a Tesla can be registered through the API, see API overview)
 - See open ride requests and accept one
 - See the current pool: passengers, seats, status
 - Mark arrived, start and complete
@@ -186,6 +186,7 @@ Mandated: React/Next.js and Node.js. Everything else below is a choice, with the
 | JWT + bcrypt | Server sessions, an auth provider | Stateless, simple for one API | Need token revocation, or multiple clients with SSO |
 | zod | Joi, hand-written checks | Validation at the route boundary with typed results | Not expected to change |
 | Vitest + Supertest | Jest | Fast, TypeScript friendly, tests hit the real API against a real Postgres | Not expected to change |
+| Polling every 5 seconds | WebSockets, server-sent events | Status changes are infrequent, and polling needs no extra infrastructure | Request volume makes polling expensive |
 | Docker Compose | Manual setup | One command runs web, API and DB | Production needs an orchestrator |
 
 Details on why raw SQL: [docs/03-architecture-and-erd.md](docs/03-architecture-and-erd.md).
@@ -207,7 +208,7 @@ Details on why raw SQL: [docs/03-architecture-and-erd.md](docs/03-architecture-a
 │   ├── migrations/       001_init.sql (schema, constraints, indexes)
 │   └── seed/             001_seed.sql (zones, story cast), 002_zone_distances.sql
 ├── scripts/              story script (Nusrat, Rafiq, Jashim demo run)
-├── docs/                 assumptions, fare model, architecture and ERD
+├── docs/                 assumptions, fare model, architecture and ERD, screenshots
 ├── docker-compose.yml
 └── .env.example
 ```
@@ -262,10 +263,16 @@ Do not reuse these credentials in any public deployment. Register fresh accounts
 2. Rafiq requests Banani to Gulshan 1 (1 seat). His estimate is 85.00 BDT.
 3. Jashim (seeded online) accepts Nusrat's request. A pool opens in Bullet.
 4. Jashim accepts Rafiq's request. He joins the same pool. Both now get the pool discount: Nusrat 56.00 BDT, Rafiq 68.00 BDT.
-5. Shirin requests a seat. If Bullet is full, she gets a clear 409 error. If a seat is free, she can be accepted.
+5. Shirin requests 2 seats, but only 1 is left. When Jashim tries to accept, the API refuses with 409 "Not enough free seats" and Bullet stays at 2 of 3 seats. A 1-seat request from Shirin would have been accepted.
 6. Jashim marks arrived, start and complete. Each passenger sees only their own status and fare.
 
-To run the same story against the API from the command line (PowerShell), with the stack up: `./scripts/story.ps1`. It logs in as the four demo users and prints the fares at each step.
+To run the same story against the API (PowerShell, stack up, fresh database):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\story.ps1
+```
+
+It logs in as the four demo users and prints the fares at each step. Run `docker compose down -v` and `docker compose up -d` again before re-running it, because each passenger can only have one active ride.
 
 ## Matching rule
 
@@ -359,7 +366,7 @@ Latest result: **8 test files, 37 tests, all passing.** Tests run against an iso
 | Distances and zones | `zones.test.ts` |
 | Security headers, body limit, rate limit | `hardening.test.ts` |
 
-Security note: `npm audit --omit=dev` reports 0 vulnerabilities. A plain `npm audit` reports some in dev-only tooling (test runner and bundler), which is not part of the runtime image. I did not run `npm audit fix --force`, to avoid breaking upgrades.
+Security note: `npm install` reports some audit findings in the dependency tree. I did not run `npm audit fix --force`, because it can upgrade major versions and break a working build. Run `npm audit --omit=dev` in `backend` and `frontend` to see what applies to the runtime image.
 
 ## API overview
 
@@ -384,7 +391,7 @@ REST with JSON and JWT bearer auth. REST fits this domain: a handful of resource
 | `GET /vehicles/me/pool` | driver | Current pool: passengers, seats, status |
 | `GET /vehicles/me/history` | driver | Finished pools |
 
-Errors use one JSON shape (status, machine code, message): 400 validation, 401 unauthenticated, 403 forbidden or not the owner, 404 not found, 409 invalid transition or no seats.
+Errors use one JSON shape: 400 validation, 401 unauthenticated, 403 forbidden or not the owner, 404 not found, 409 invalid transition or no seats.
 
 ## Security and logging
 
@@ -395,9 +402,9 @@ Errors use one JSON shape (status, machine code, message): 400 validation, 401 u
 
 ## Deployment
 
-TODO: choose one.
-- Deployed on free tiers: web on TODO, API on TODO, Postgres on TODO. URL at the top of this file. Production uses its own long random `JWT_SECRET`.
-- Or: no free backend host was available for TODO reason. The reproducible deployment is the Docker Compose setup above.
+This submission is not deployed to a public URL. I did not set up a free-tier host in the time I had, so the deployment is the reproducible Docker Compose setup in "Quick start" above. On any machine with Docker, `docker compose up --build` starts the database (with migrations and seed data), the API and the web app.
+
+For a real deployment I would set a long random `JWT_SECRET`, stop publishing the database port, change or remove the demo seed accounts, and put the API and web app behind HTTPS.
 
 ## Assumptions
 
@@ -415,16 +422,21 @@ Full list: [docs/01-assumptions-and-lifecycle.md](docs/01-assumptions-and-lifecy
 ## Known limitations
 
 - Cash only; no wallet or payment gateway.
-- Zone-based matching with simplified distances, not real routing.
+- Zone-based matching with simplified, invented distances, not real routing.
+- The sign-up page creates passenger accounts only. Driver accounts come from the seed or from `POST /auth/register` with `role: DRIVER`.
+- The concurrency test runs both requests inside one API process. It proves the database locks and constraints, not behaviour across several API instances.
 - Rate limit counters are in API memory, so they are per instance.
+- The login token is kept in browser `localStorage`, which a cross-site scripting bug could read. A production version would use an httpOnly cookie.
+- Status updates use 5-second polling, not push.
 - Migrations are plain SQL applied only on a fresh volume (`docker compose down -v` resets them). A migration tool is the next step if the schema starts changing often.
-- No real-time push; no ratings.
-- `npm audit` findings in dev-only tooling (see Testing).
+- No ratings.
+- Not deployed to a public URL (see Deployment).
 
 ## Next improvements
 
 - A migration tool and CI that runs the tests on every push
 - Real-time status updates (server-sent events or websockets)
+- Driver sign-up and Tesla registration in the UI
 - Wallet payments and ratings
 - A real distance source behind the same fare interface
 
@@ -443,7 +455,7 @@ Not built, only reasoned through. The MVP stays simple on purpose; here is what 
 
 **4. Geospatial matching.** Zones become geohash or H3 cells, with PostGIS for nearby-driver search. Drivers' live locations go in an in-memory geo index (Redis GEO), not in Postgres on every ping.
 
-**5. Real-time.** Replace refresh with websockets or SSE. Driver location and ride status flow through a pub/sub channel.
+**5. Real-time.** Replace polling with websockets or SSE. Driver location and ride status flow through a pub/sub channel.
 
 **6. Queues and events.** Move non-critical work off the request path (notifications, receipts, analytics) onto a queue. Emit ride events to a log so other services can consume them. Keep seat claiming synchronous.
 
@@ -459,15 +471,30 @@ Not built, only reasoned through. The MVP stays simple on purpose; here is what 
 
 **12. Failure strategy.** Timeouts on every call, a circuit breaker around external services, and the driver or passenger can always cancel safely. If the matching service is down, requests stay REQUESTED and can be matched later.
 
-TODO: add a scaling diagram if you have time.
+The shape I would grow into, one step at a time, only when a number justifies it:
+
+```mermaid
+flowchart LR
+    B[Browsers] --> LB[Load balancer and rate limit]
+    LB --> W[Next.js web x N]
+    LB --> A[API x N, stateless]
+    A --> PG[(Postgres primary)]
+    PG --> R[(Read replicas)]
+    A --> R
+    A --> C[(Redis: cache and rate limits)]
+    A --> Q[[Queue: matching and notifications]]
+    Q --> M[Matching workers]
+    M --> PG
+    A --> RT[SSE or WebSocket gateway]
+```
 
 ## AI usage
 
-TODO: this section must be written in your own words and be true. Fill in:
+I used Claude (claude.ai chat) as a pair-programming and review partner for this project. I ran every command myself, read the output, and fixed the problems that came up. The tests and the story script are what I trust, not the chat.
 
-- **Tools used and what for:** TODO (e.g. Claude for design review and README drafting, Copilot for boilerplate)
-- **One accepted suggestion:** TODO (what it was, why you accepted it)
-- **One rejected or changed suggestion:** TODO (what it was, why you rejected or changed it)
+- **Tools used and what for:** Claude for design review (lifecycle, fare model, schema), writing and reviewing backend and frontend code, writing the Vitest/Supertest tests, debugging Docker, git and PowerShell problems, and drafting parts of this README. Nothing else.
+- **One accepted suggestion:** locking rows in a fixed order (vehicle, then ride, then pool, all `FOR UPDATE`) in `accept`, `advance` and `cancel`, so concurrent requests cannot deadlock and Bullet's seat count cannot be corrupted. I accepted it and then checked it myself: `concurrency.test.ts` has Nusrat and Shirin race for the last seat five times, and exactly one wins every time. A code review of the first version also showed the seat increment had no guard of its own, so I added `occupied_seats + n <= capacity` to that `UPDATE` as a second line of defence behind the database `CHECK` constraint.
+- **One rejected or changed suggestion:** the first stack suggestion included Prisma. I did not use it. The design depends on partial unique indexes, `CHECK` constraints and row locks, so I wrote plain SQL with `pg` and migration files (see "Tech stack and decisions"). Two other changes: the first architecture doc said seats are claimed with one atomic conditional `UPDATE`, but the code uses row locks, so I rewrote the doc to match the code. And the first story script assumed seed emails and a password that did not exist; it failed at login, so I corrected it against the real seed file.
 
 All code in this repository is code I can explain, debug and change.
 
