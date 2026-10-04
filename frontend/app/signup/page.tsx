@@ -32,16 +32,28 @@ export default function SignupPage() {
   return (
     <main>
       <h1>Dhaka Tesla Pool</h1>
-      <p className="tagline">Create a passenger account and share your first ride.</p>
+      <p className="tagline">
+        Create a passenger account and share your first ride.
+      </p>
 
       <form className="card" onSubmit={onSubmit}>
         <label>
           Name
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} required />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+            required
+          />
         </label>
         <label>
           Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </label>
         <label>
           Password (at least 8 characters)
