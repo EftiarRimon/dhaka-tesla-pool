@@ -234,3 +234,24 @@ export async function cancel(actor: { userId: string; role: "PASSENGER" | "DRIVE
     return publicRide(fresh!);
   });
 }
+
+export async function events(actor: { userId: string; role: "PASSENGER" | "DRIVER" }, rideId: string) {
+  return withTx(async (c) => {
+    const link = await repo.findRideLink(c, rideId);
+    if (!link) {
+      throw new HttpError(404, "Ride not found");
+    }
+    const owns = actor.role === "PASSENGER" ? link.passenger_id === actor.userId : link.driver_id === actor.userId;
+    if (!owns) {
+      throw new HttpError(403, "Not your ride");
+    }
+    const rows = await repo.listEvents(c, rideId);
+    return rows.map((e) => ({
+      id: e.id,
+      fromStatus: e.from_status,
+      toStatus: e.to_status,
+      actorRole: e.actor_id === link.passenger_id ? "PASSENGER" : "DRIVER",
+      createdAt: e.created_at,
+    }));
+  });
+}

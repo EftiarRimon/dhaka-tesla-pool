@@ -205,3 +205,19 @@ export async function clearPoolDiscount(c: PoolClient, poolId: string): Promise<
     [poolId]
   );
 }
+
+export interface EventRow {
+  id: string;
+  from_status: string | null;
+  to_status: string;
+  actor_id: string | null;
+  created_at: Date;
+}
+
+export async function listEvents(c: PoolClient, rideId: string): Promise<EventRow[]> {
+  const { rows } = await c.query<EventRow>(
+    "SELECT id, from_status, to_status, actor_id, created_at FROM ride_events WHERE ride_id = $1 ORDER BY id",
+    [rideId]
+  );
+  return rows;
+}
