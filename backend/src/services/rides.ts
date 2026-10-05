@@ -234,3 +234,47 @@ export async function cancel(actor: { userId: string; role: "PASSENGER" | "DRIVE
     return publicRide(fresh!);
   });
 }
+
+export async function coPassengers(passengerId: string, rideId: string) {
+  return withTx(async (c) => {
+    const ride = await repo.getRide(c, rideId);
+    if (!ride) {
+      throw new HttpError(404, "Ride not found");
+    }
+    if (ride.passenger_id !== passengerId) {
+      throw new HttpError(403, "Not your ride");
+    }
+    if (!ride.pool_id || !["MATCHED", "DRIVER_ARRIVED", "STARTED"].includes(ride.status)) {
+      return [];
+    }
+    const rows = await repo.listCoPassengers(c, ride.pool_id, ride.id);
+    return rows.map((p) => ({
+      firstName: p.name.trim().split(/\s+/)[0],
+      pickupZoneId: p.pickup_zone_id,
+      destinationZoneId: p.destination_zone_id,
+      seats: p.seats,
+      matchedAt: p.matched_at,
+    }));
+  });
+}
+
+export async function events(actor: { userId: string; role: "PASSENGER" | "DRIVER" }, rideId: string) {
+  return withTx(async (c) => {
+    const link = await repo.findRideLink(c, rideId);
+    if (!link) {
+      throw new HttpError(404, "Ride not found");
+    }
+    const owns = actor.role === "PASSENGER" ? link.passenger_id === actor.userId : link.driver_id === actor.userId;
+    if (!owns) {
+      throw new HttpError(403, "Not your ride");
+    }
+    const rows = await repo.listEvents(c, rideId);
+    return rows.map((e) => ({
+      id: e.id,
+      fromStatus: e.from_status,
+      toStatus: e.to_status,
+      actorRole: e.actor_id === link.passenger_id ? "PASSENGER" : "DRIVER",
+      createdAt: e.created_at,
+    }));
+  });
+}
