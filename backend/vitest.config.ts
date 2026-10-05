@@ -4,6 +4,7 @@ import { TEST_DATABASE_URL } from "./tests/testUrl";
 export default defineConfig({
   test: {
     environment: "node",
+pool: "threads",
     include: ["tests/**/*.test.ts"],
     globalSetup: ["tests/globalSetup.ts"],
     setupFiles: ["tests/setupEach.ts"],
