@@ -216,3 +216,36 @@ main { max-width: 880px; }
 .role-switch button { background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 12px; box-shadow: none; }
 .role-switch button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 .role-switch small { display: block; font-weight: 600; opacity: 0.7; }
+.timeline {
+  margin: 1rem 0;
+}
+.timeline h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+.timeline ol {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1rem;
+  border-left: 2px solid currentColor;
+  opacity: 0.9;
+}
+.timeline li {
+  padding: 0.25rem 0;
+}
+
+.copassengers {
+  margin: 1rem 0;
+}
+.copassengers h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+.copassengers ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.copassengers li {
+  padding: 0.25rem 0;
+}

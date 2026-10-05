@@ -235,6 +235,29 @@ export async function cancel(actor: { userId: string; role: "PASSENGER" | "DRIVE
   });
 }
 
+export async function coPassengers(passengerId: string, rideId: string) {
+  return withTx(async (c) => {
+    const ride = await repo.getRide(c, rideId);
+    if (!ride) {
+      throw new HttpError(404, "Ride not found");
+    }
+    if (ride.passenger_id !== passengerId) {
+      throw new HttpError(403, "Not your ride");
+    }
+    if (!ride.pool_id || !["MATCHED", "DRIVER_ARRIVED", "STARTED"].includes(ride.status)) {
+      return [];
+    }
+    const rows = await repo.listCoPassengers(c, ride.pool_id, ride.id);
+    return rows.map((p) => ({
+      firstName: p.name.trim().split(/\s+/)[0],
+      pickupZoneId: p.pickup_zone_id,
+      destinationZoneId: p.destination_zone_id,
+      seats: p.seats,
+      matchedAt: p.matched_at,
+    }));
+  });
+}
+
 export async function events(actor: { userId: string; role: "PASSENGER" | "DRIVER" }, rideId: string) {
   return withTx(async (c) => {
     const link = await repo.findRideLink(c, rideId);

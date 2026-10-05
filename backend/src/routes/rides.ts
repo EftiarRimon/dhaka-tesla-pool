@@ -91,3 +91,12 @@ ridesRouter.get("/:id/events", async (req: Request, res: Response, next: NextFun
     next(err);
   }
 });
+
+ridesRouter.get("/:id/copassengers", passenger, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    res.json(await rides.coPassengers(req.auth!.userId, id));
+  } catch (err) {
+    next(err);
+  }
+});

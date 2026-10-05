@@ -221,3 +221,24 @@ export async function listEvents(c: PoolClient, rideId: string): Promise<EventRo
   );
   return rows;
 }
+export interface CoPassengerRow {
+  name: string;
+  pickup_zone_id: number;
+  destination_zone_id: number;
+  seats: number;
+  matched_at: Date | null;
+}
+
+export async function listCoPassengers(c: PoolClient, poolId: string, excludeRideId: string): Promise<CoPassengerRow[]> {
+  const { rows } = await c.query<CoPassengerRow>(
+    `SELECT u.name, r.pickup_zone_id, r.destination_zone_id, r.seats,
+            (SELECT min(e.created_at) FROM ride_events e WHERE e.ride_id = r.id AND e.to_status = 'MATCHED') AS matched_at
+     FROM rides r JOIN users u ON u.id = r.passenger_id
+     WHERE r.pool_id = $1 AND r.id <> $2 AND r.status IN ('MATCHED', 'DRIVER_ARRIVED', 'STARTED')
+     ORDER BY matched_at`,
+    [poolId, excludeRideId]
+  );
+  return rows;
+}
+
+

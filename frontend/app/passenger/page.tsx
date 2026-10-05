@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { errorMessage, STATUS_LABEL, taka } from "@/lib/format";
 import { Hero } from "@/components/Art";
+import RideTimeline from "@/components/RideTimeline";
+import CoPassengers from "@/components/CoPassengers";
 import {
   ACTIVE_STATUSES,
   CANCELLABLE_STATUSES,
@@ -147,7 +149,9 @@ export default function PassengerPage() {
               Shared ride: {taka(active.estimatedFarePaisa)} minus{" "}
               {taka(active.discountPaisa)} pool discount
             </p>
-          )}
+
+          )}          <RideTimeline rideId={active.id} status={active.status} />
+                    <CoPassengers rideId={active.id} status={active.status} zoneName={zoneName} />
           {CANCELLABLE_STATUSES.includes(active.status) && (
             <button
               className="secondary"
