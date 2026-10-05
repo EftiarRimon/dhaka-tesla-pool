@@ -40,3 +40,23 @@ export const listMyRides = () => api<Ride[]>("/rides/me");
 export const estimateRide = (input: RideInput) => api<Estimate>("/rides/estimate", { method: "POST", body: input });
 export const requestRide = (input: RideInput) => api<Ride>("/rides", { method: "POST", body: input });
 export const cancelRide = (id: string) => api<Ride>(`/rides/${id}/cancel`, { method: "POST" });
+
+export interface RideEvent {
+  id: string;
+  fromStatus: RideStatus | null;
+  toStatus: RideStatus;
+  actorRole: "PASSENGER" | "DRIVER";
+  createdAt: string;
+}
+
+export const listRideEvents = (id: string) => api<RideEvent[]>(`/rides/${id}/events`);
+
+export interface CoPassenger {
+  firstName: string;
+  pickupZoneId: number;
+  destinationZoneId: number;
+  seats: number;
+  matchedAt: string | null;
+}
+
+export const listCoPassengers = (id: string) => api<CoPassenger[]>(`/rides/${id}/copassengers`);
