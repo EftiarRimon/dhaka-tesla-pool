@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { errorMessage, STATUS_LABEL, taka } from "@/lib/format";
+import { Hero } from "@/components/Art";
 import {
   ACTIVE_STATUSES,
   CANCELLABLE_STATUSES,
@@ -49,7 +50,9 @@ export default function PassengerPage() {
   // Status updates arrive by polling every 5 seconds (see the README trade-offs).
   useEffect(() => {
     if (!isPassenger) return;
-    listZones().then(setZones).catch((err) => setError(errorMessage(err)));
+    listZones()
+      .then(setZones)
+      .catch((err) => setError(errorMessage(err)));
     refresh();
     const timer = setInterval(refresh, 5000);
     return () => clearInterval(timer);
@@ -60,7 +63,11 @@ export default function PassengerPage() {
     setEstimateError(null);
     if (!pickup || !destination || pickup === destination) return;
     let stale = false;
-    estimateRide({ pickupZoneId: Number(pickup), destinationZoneId: Number(destination), seats })
+    estimateRide({
+      pickupZoneId: Number(pickup),
+      destinationZoneId: Number(destination),
+      seats,
+    })
       .then((e) => !stale && setEstimate(e))
       .catch((err) => !stale && setEstimateError(errorMessage(err)));
     return () => {
@@ -73,7 +80,11 @@ export default function PassengerPage() {
     setBusy(true);
     setError(null);
     try {
-      await requestRide({ pickupZoneId: Number(pickup), destinationZoneId: Number(destination), seats });
+      await requestRide({
+        pickupZoneId: Number(pickup),
+        destinationZoneId: Number(destination),
+        seats,
+      });
       await refresh();
     } catch (err) {
       setError(errorMessage(err));
@@ -103,14 +114,18 @@ export default function PassengerPage() {
     );
   }
 
-  const zoneName = (id: number) => zones.find((z) => z.id === id)?.name ?? `Zone ${id}`;
+  const zoneName = (id: number) =>
+    zones.find((z) => z.id === id)?.name ?? `Zone ${id}`;
   const active = rides?.find((r) => ACTIVE_STATUSES.includes(r.status));
   const history = rides?.filter((r) => r !== active) ?? [];
 
   return (
     <main>
-      <h1>Hello, {user?.name}</h1>
-      <p className="tagline">Share a seat. Split the fare. Survive Dhaka traffic.</p>
+      <Hero
+        variant="passenger"
+        title={`Hello, ${user?.name}`}
+        bangla="ঢাকার জ্যামে, সিট শেয়ার করুন"
+      />
       {error && <p className="error">{error}</p>}
 
       {rides === null ? (
@@ -119,7 +134,8 @@ export default function PassengerPage() {
         <section className="card">
           <h2>Your current ride</h2>
           <p>
-            {zoneName(active.pickupZoneId)} to {zoneName(active.destinationZoneId)}, {active.seats} seat
+            {zoneName(active.pickupZoneId)} to{" "}
+            {zoneName(active.destinationZoneId)}, {active.seats} seat
             {active.seats > 1 ? "s" : ""}
           </p>
           <p>
@@ -128,11 +144,16 @@ export default function PassengerPage() {
           <p className="fare">{taka(active.passengerFarePaisa)}</p>
           {active.discountPaisa > 0 && (
             <p className="muted">
-              Shared ride: {taka(active.estimatedFarePaisa)} minus {taka(active.discountPaisa)} pool discount
+              Shared ride: {taka(active.estimatedFarePaisa)} minus{" "}
+              {taka(active.discountPaisa)} pool discount
             </p>
           )}
           {CANCELLABLE_STATUSES.includes(active.status) && (
-            <button className="secondary" disabled={busy} onClick={() => onCancel(active.id)}>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => onCancel(active.id)}
+            >
               Cancel ride
             </button>
           )}
@@ -142,7 +163,11 @@ export default function PassengerPage() {
           <h2>Request a ride</h2>
           <label>
             Pickup
-            <select value={pickup} onChange={(e) => setPickup(e.target.value)} required>
+            <select
+              value={pickup}
+              onChange={(e) => setPickup(e.target.value)}
+              required
+            >
               <option value="">Choose a zone</option>
               {zones.map((z) => (
                 <option key={z.id} value={z.id}>
@@ -153,7 +178,11 @@ export default function PassengerPage() {
           </label>
           <label>
             Destination
-            <select value={destination} onChange={(e) => setDestination(e.target.value)} required>
+            <select
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+              required
+            >
               <option value="">Choose a zone</option>
               {zones
                 .filter((z) => String(z.id) !== pickup)
@@ -166,7 +195,10 @@ export default function PassengerPage() {
           </label>
           <label>
             Seats
-            <select value={seats} onChange={(e) => setSeats(Number(e.target.value))}>
+            <select
+              value={seats}
+              onChange={(e) => setSeats(Number(e.target.value))}
+            >
               {[1, 2, 3].map((n) => (
                 <option key={n} value={n}>
                   {n}
@@ -176,8 +208,12 @@ export default function PassengerPage() {
           </label>
           {estimate && (
             <p>
-              Estimated fare: <span className="fare">{taka(estimate.estimatedFarePaisa)}</span>
-              <span className="muted"> ({estimate.distanceKm} km, less if you share)</span>
+              Estimated fare:{" "}
+              <span className="fare">{taka(estimate.estimatedFarePaisa)}</span>
+              <span className="muted">
+                {" "}
+                ({estimate.distanceKm} km, less if you share)
+              </span>
             </p>
           )}
           {estimateError && <p className="error">{estimateError}</p>}
@@ -189,12 +225,16 @@ export default function PassengerPage() {
 
       <section className="card">
         <h2>Ride history</h2>
-        {rides !== null && history.length === 0 && <p className="muted">No past rides yet.</p>}
+        {rides !== null && history.length === 0 && (
+          <p className="muted">No past rides yet.</p>
+        )}
         {history.map((r) => (
           <p key={r.id} className="history-row">
             {zoneName(r.pickupZoneId)} to {zoneName(r.destinationZoneId)}
             <span className="badge">{STATUS_LABEL[r.status]}</span>
-            {r.status === "COMPLETED" && <strong> {taka(r.finalFarePaisa ?? r.passengerFarePaisa)}</strong>}
+            {r.status === "COMPLETED" && (
+              <strong> {taka(r.finalFarePaisa ?? r.passengerFarePaisa)}</strong>
+            )}
           </p>
         ))}
       </section>
