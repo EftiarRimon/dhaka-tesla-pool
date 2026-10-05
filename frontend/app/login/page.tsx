@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Hero } from "@/components/Art";
 import { useAuth } from "@/lib/auth";
 
 const DEMO = [
@@ -35,86 +36,53 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth">
-      <aside className="auth-art">
-        <img
-          src="/art/login-street.webp"
-          alt="A Dhaka lane with an auto-rickshaw, watercolour"
-        />
-        <div className="auth-shade" />
-        <div className="auth-copy">
-          <h1>Dhaka Tesla Pool</h1>
-          <p className="bangla">সিট শেয়ার করুন, ভাড়া ভাগ করুন</p>
-          <ul className="chips">
-            <li>Share a seat</li>
-            <li>Split the fare</li>
-            <li>Beat the jam</li>
-          </ul>
-        </div>
-      </aside>
+    <main>
+      <Hero variant="login" title="Dhaka Tesla Pool" bangla="সিট শেয়ার করুন, ভাড়া ভাগ করুন" name="Dhaka">
+        <ul className="chips">
+          <li>Share a seat</li>
+          <li>Split the fare</li>
+          <li>Beat the jam</li>
+        </ul>
+      </Hero>
 
-      <section className="auth-panel">
-        <img
-          className="auth-city"
-          src="/art/login-city.webp"
-          alt="Illustrated Dhaka skyline"
-        />
-        <div className="auth-body">
-          <form className="card sticker-card" onSubmit={onSubmit}>
-            <img
-              className="auth-sticker"
-              src="/art/login-rickshaw.webp"
-              alt=""
-            />
-            <h2>Welcome back</h2>
-            <label>
-              Email
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Password
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </label>
-            {error && <p className="error">{error}</p>}
-            <button type="submit" disabled={busy}>
-              {busy ? "Signing in..." : "Sign in"}
+      <form className="card" onSubmit={onSubmit}>
+        <h2>Welcome back</h2>
+        <label>
+          Email
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </label>
+        <label>
+          Password
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </label>
+        {error && <p className="error">{error}</p>}
+        <button type="submit" disabled={busy}>
+          {busy ? "Signing in..." : "Sign in"}
+        </button>
+        <p className="muted">
+          New passenger? <Link href="/signup">Create an account</Link>
+        </p>
+      </form>
+
+      <div className="card">
+        <h2>Try the Banani story</h2>
+        <p className="muted">Demo accounts, password: password123</p>
+        <div className="row">
+          {DEMO.map((d) => (
+            <button
+              key={d.email}
+              type="button"
+              className="secondary"
+              onClick={() => {
+                setEmail(d.email);
+                setPassword("password123");
+              }}
+            >
+              {d.name} ({d.role})
             </button>
-            <p className="muted">
-              New passenger? <Link href="/signup">Create an account</Link>
-            </p>
-          </form>
-
-          <div className="card">
-            <h2>Try the Banani story</h2>
-            <p className="muted">Demo accounts, password: password123</p>
-            <div className="row">
-              {DEMO.map((d) => (
-                <button
-                  key={d.email}
-                  type="button"
-                  className="secondary"
-                  onClick={() => {
-                    setEmail(d.email);
-                    setPassword("password123");
-                  }}
-                >
-                  {d.name} ({d.role})
-                </button>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
-      </section>
-    </div>
+      </div>
+    </main>
   );
 }

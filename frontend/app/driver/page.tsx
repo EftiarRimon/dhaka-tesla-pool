@@ -108,8 +108,7 @@ export default function DriverPage() {
     <main>
       <Hero
         variant="driver"
-        title="Bullet"
-        name="Bullet"
+title={vehicle?.name ?? "Your Tesla"}        name={vehicle?.name}
         bangla="আপনার রিকশা, আপনার যাত্রী"
       />
       <p className="tagline">Fill the seats, split the fare, beat the jam.</p>

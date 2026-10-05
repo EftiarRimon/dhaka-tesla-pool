@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Motion from "@/components/Motion";
 import { AuthProvider } from "@/lib/auth";
 import "./globals.css";
 
@@ -12,6 +13,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <AuthProvider>{children}</AuthProvider>
+        <Motion />
       </body>
     </html>
   );
