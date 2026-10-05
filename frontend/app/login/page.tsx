@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Hero } from "@/components/Art";
 import { useAuth } from "@/lib/auth";
 
 const DEMO = [
@@ -36,10 +37,16 @@ export default function LoginPage() {
 
   return (
     <main>
-      <h1>Dhaka Tesla Pool</h1>
-      <p className="tagline">Share a seat. Split the fare. Survive Dhaka traffic.</p>
+      <Hero variant="login" title="Dhaka Tesla Pool" bangla="সিট শেয়ার করুন, ভাড়া ভাগ করুন" name="Dhaka">
+        <ul className="chips">
+          <li>Share a seat</li>
+          <li>Split the fare</li>
+          <li>Beat the jam</li>
+        </ul>
+      </Hero>
 
       <form className="card" onSubmit={onSubmit}>
+        <h2>Welcome back</h2>
         <label>
           Email
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -52,14 +59,14 @@ export default function LoginPage() {
         <button type="submit" disabled={busy}>
           {busy ? "Signing in..." : "Sign in"}
         </button>
+        <p className="muted">
+          New passenger? <Link href="/signup">Create an account</Link>
+        </p>
       </form>
 
-      <p className="muted">
-        New passenger? <Link href="/signup">Create an account</Link>
-      </p>
-
       <div className="card">
-        <p className="muted">Demo accounts (password: password123)</p>
+        <h2>Try the Banani story</h2>
+        <p className="muted">Demo accounts, password: password123</p>
         <div className="row">
           {DEMO.map((d) => (
             <button
